@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blob Login - Full Body & Mouth Movement</title>
+    <style>
+        /* * 🎨 1. Split Screen Layout */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            flex: 1;
+            background-color: #e8e8e8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .right-panel {
+            flex: 1;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        /* * 🎨 2. The Blob Characters */
+        .stage {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .character {
+            position: relative;
+            border-radius: 100px 100px 0 0;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+            transform-origin: bottom center;
+        }
+
+        /* Character Sizes */
+        .purple {
+            width: 120px; height: 320px;
+            background-color: #6200ea;
+            z-index: 1; margin-right: -40px;
+        }
+
+        .black {
+            width: 90px; height: 240px;
+            background-color: #1a1a1a;
+            z-index: 2; margin-right: -30px;
+            border-radius: 80px 80px 0 0;
+        }
+
+        .orange {
+            width: 240px; height: 160px;
+            background-color: #ff6d00;
+            border-radius: 150px 150px 0 0;
+            z-index: 4; margin-right: -40px; margin-left: -20px;
+        }
+
+        .yellow {
+            width: 100px; height: 190px;
+            background-color: #ffea00;
+            border-radius: 60px 60px 0 0;
+            z-index: 3;
+        }
+
+        /* * 🎨 3. Faces & Eyes */
+        .face {
+            position: absolute;
+            top: 50px;
+            display: flex;
+            gap: 14px;
+            /* We remove the transition on 'top' so movement is instant/smooth */
+        }
+        
+        .purple .face { top: 40px; gap: 12px; }
+        .orange .face { top: 60px; gap: 30px; }
+        .black .face { top: 50px; gap: 12px; }
+        .yellow .face { top: 50px; gap: 12px; }
+
+        .eye {
+            width: 24px; height: 24px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pupil {
+            width: 10px; height: 10px;
+            background: black;
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(5px, 0); 
+        }
+
+        /* * 🎨 4. Mouths (With Parallax Support) */
+        .mouth {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            width: 12px;
+            height: 6px;
+            background: black;
+            border-radius: 0 0 12px 12px; /* Smile */
+            transition: border-radius 0.3s, bottom 0.3s, height 0.3s, background-color 0.2s;
+            
+            /* MAGIC: We use CSS variables (--mx, --my) to move the mouth.
+               We keep translateX(-50%) to keep it centered initially.
+            */
+            transform: translate(calc(-50% + var(--mx, 0px)), var(--my, 0px));
+        }
+        
+        /* Black character's mouth is white so it shows up */
+        .black .mouth { background: rgba(255,255,255,0.3); }
+
+        /* Yellow character's side mouth */
+        .yellow .mouth {
+            width: 15px; height: 2px;
+            border-radius: 0; 
+            left: 70%; bottom: -15px;
+            transform: translate(var(--mx, 0px), var(--my, 0px)) rotate(10deg);
+        }
+
+        /* --- SAD / WRONG PASSWORD STATE --- */
+        .character.sad .mouth {
+            border-radius: 12px 12px 0 0; /* Frown */
+            bottom: -30px;
+            height: 8px;
+        }
+        
+        .yellow.sad .mouth {
+            transform: translate(var(--mx, 0px), var(--my, 0px)) rotate(-20deg);
+        }
+
+        /* * 🎨 5. Login Form */
+        .login-container { width: 100%; max-width: 350px; }
+        h2 { margin-bottom: 10px; color: #333; }
+        p.subtitle { color: #666; margin-bottom: 30px; font-size: 0.9em; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input {
+            width: 100%; padding: 12px; margin-bottom: 20px;
+            border: 1px solid #ddd; border-radius: 8px;
+            background: #fafafa; outline: none; box-sizing: border-box;
+        }
+        input:focus { border-color: #333; background: #fff; }
+        button.btn-primary {
+            width: 100%; padding: 14px; background-color: #1a1a1a; color: white;
+            border: none; border-radius: 30px; font-weight: bold; cursor: pointer;
+        }
+        button.btn-google {
+            width: 100%; padding: 14px; margin-top: 15px;
+            background-color: white; color: #333; border: 1px solid #ddd;
+            border-radius: 30px; font-weight: bold; cursor: pointer;
+        }
+        .error-msg {
+            color: #d32f2f; font-size: 13px; margin-top: 10px; opacity: 0; text-align: center;
+        }
+        .shaking { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="left-panel">
+        <div class="stage" id="stage">
+            <div class="character purple">
+                <div class="face">
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="mouth"></div>
+                </div>
+            </div>
+
+            <div class="character black">
+                <div class="face">
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="mouth"></div>
+                </div>
+            </div>
+
+            <div class="character orange">
+                <div class="face">
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="mouth"></div>
+                </div>
+            </div>
+
+            <div class="character yellow">
+                <div class="face">
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="mouth"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="login-container">
+            <div style="text-align:center; margin-bottom: 20px; font-size: 24px;">✨</div>
+            <h2>Welcome back!</h2>
+            <p class="subtitle">Please enter your details.</p>
+            <label>Email</label>
+            <input type="email" placeholder="Enter your email">
+            <label>Password</label>
+            <input type="password" id="passwordInput" placeholder="••••••••">
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:20px; color:#666;">
+                <span><input type="checkbox" style="width:auto; margin:0;"> Remember for 30 days</span>
+                <span style="cursor:pointer;">Forgot password?</span>
+            </div>
+            <button class="btn-primary" onclick="checkPassword()">Log In</button>
+            <button class="btn-google">Log in with Google</button>
+            <div class="error-msg" id="errorMsg">Wrong password! (Try 'password')</div>
+        </div>
+    </div>
+
+    <script>
+        const eyes = document.querySelectorAll('.eye');
+        const characters = document.querySelectorAll('.character');
+        const mouths = document.querySelectorAll('.mouth');
+        const stage = document.getElementById('stage');
+        const passwordInput = document.getElementById('passwordInput');
+        const errorMsg = document.getElementById('errorMsg');
+
+        // 1. Mouse Movement Tracking
+        document.addEventListener('mousemove', (event) => {
+            let mouseX = event.clientX;
+            let mouseY = event.clientY;
+
+            // --- A. Eye Rotation ---
+            eyes.forEach(eye => {
+                let rect = eye.getBoundingClientRect();
+                let eyeCenterX = rect.left + (rect.width / 2);
+                let eyeCenterY = rect.top + (rect.height / 2);
+                let angleRad = Math.atan2(mouseY - eyeCenterY, mouseX - eyeCenterX);
+                let angleDeg = angleRad * (180 / Math.PI);
+                eye.style.transform = `rotate(${angleDeg}deg)`;
+            });
+
+            // --- B. Body Lean & Mouth Movement ---
+            let leftPanelWidth = window.innerWidth / 2;
+            // Get position relative to the center of the animation panel
+            let percentX = (mouseX - (leftPanelWidth/2)) / leftPanelWidth;
+            // Get vertical position relative to screen height
+            let percentY = (mouseY - (window.innerHeight/2)) / window.innerHeight;
+
+            characters.forEach((char, index) => {
+                // 1. Rotate Body
+                let rotateAmount = percentX * (15 + (index * 3));
+                rotateAmount = Math.max(-20, Math.min(20, rotateAmount));
+                char.style.transform = `rotate(${rotateAmount}deg)`;
+
+                // 2. Move Mouth (Parallax)
+                // We find the mouth inside this specific character
+                let mouth = char.querySelector('.mouth');
+                if(mouth) {
+                    // Calculate movement (limit to 10px range)
+                    let moveX = percentX * 12; 
+                    let moveY = percentY * 10;
+                    
+                    // Send these values to CSS variables
+                    mouth.style.setProperty('--mx', `${moveX}px`);
+                    mouth.style.setProperty('--my', `${moveY}px`);
+                }
+            });
+        });
+
+        // 2. Wrong Password Logic
+        function checkPassword() {
+            const password = passwordInput.value;
+            if (password !== "password") {
+                stage.classList.add('shaking');
+                characters.forEach(char => char.classList.add('sad'));
+                errorMsg.style.opacity = 1;
+                setTimeout(() => stage.classList.remove('shaking'), 500);
+                setTimeout(() => {
+                    characters.forEach(char => char.classList.remove('sad'));
+                    errorMsg.style.opacity = 0;
+                }, 2000);
+            } else {
+                alert("Success! Welcome back.");
+            }
+        }
+    </script>
+</body>
+</html>
